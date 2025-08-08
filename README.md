@@ -1,5 +1,5 @@
-<<<<<<< HEAD
-﻿# Smile-Survey
+download-->user/src-npm install rechart-->backword to project root-->npm start
+# Smile-Survey
 # Survey Management System Documentation
  slug file path of all PCs - "C:\Slug\SlugUrl.txt"
 ## Table of Contents
