@@ -180,24 +180,10 @@ const authenticateJWT = (requiredLevel = 2) => {
     }
   };
 };
-// Add this route to your Express server
-{/*app.get('/api/get-slug', (req, res) => {
-  try {
-    const filePath = path.join('C:', 'Slug', 'SlugUrl.txt');
-    fs.readFile(filePath, 'utf8', (err, data) => {
-      if (err) {
-        console.error('Error reading slug file:', err);
-        return res.status(500).json({ error: 'Failed to read slug file' });
-      }
-      res.json({ slug: data.trim() });
-    });
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});*/}
-// User registration (superadmin only)
-app.post('/api/admin/register', authenticateJWT(1), async (req, res) => {
+
+// User registration (superadmin only) - SIMPLIFIED VERSION WITHOUT PASSWORD RESET
+// Modified registration endpoint without JWT validation
+app.post('/api/admin/register', async (req, res) => {
   try {
     const { username, password, userLevel } = req.body;
     
@@ -231,15 +217,14 @@ app.post('/api/admin/register', authenticateJWT(1), async (req, res) => {
     .input('userLevel', sql.Int, userLevel)
     .query('INSERT INTO Users (Username, PasswordHash, UserLevel) VALUES (@username, @passwordHash, @userLevel)');
     
-    res.json({ success: true });
+    res.json({ success: true, message: 'User registered successfully' });
   } catch (err) {
     console.error('Registration error:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// User login
-// Modify the login endpoint to check password expiry
+// User login - SIMPLIFIED VERSION WITHOUT PASSWORD EXPIRY CHECK
 app.post('/api/admin/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -267,12 +252,6 @@ app.post('/api/admin/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     
-    // Check password expiry
-    const hasPasswordChangedAt = await checkColumnExists('Users', 'PasswordChangedAt');
-    const changeDate = user[hasPasswordChangedAt ? 'PasswordChangedAt' : 'CreatedAt'];
-    const daysSinceChange = Math.floor((new Date() - new Date(changeDate)) / (1000 * 60 * 60 * 24));
-    const passwordExpired = daysSinceChange >= 60;
-    
     // Update last login
     await pool.request()
     .input('userId', sql.Int, user.UserID)
@@ -288,16 +267,86 @@ app.post('/api/admin/login', async (req, res) => {
     res.json({
       token,
       userLevel: user.UserLevel,
-      username: user.Username,
-      passwordExpired,
-      daysSinceChange
+      username: user.Username
     });
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ error: err.message });
   }
 });
+// Add this endpoint to your backend (server.js)
+app.post('/api/questions/bulk', async (req, res) => {
+  try {
+    const { questionText } = req.body;
+    
+    if (!questionText || !questionText.trim()) {
+      return res.status(400).json({ error: 'Question text is required' });
+    }
 
+    const pool = await getPool();
+    
+    // Get all active departments
+    const departmentsResult = await pool.request()
+      .query('SELECT DepartmentID, Slug FROM Departments WHERE IsActive = 1');
+    
+    if (departmentsResult.recordset.length === 0) {
+      return res.status(400).json({ error: 'No active departments found' });
+    }
+
+    const departments = departmentsResult.recordset;
+    const cleanQuestion = questionText.trim();
+    const hasIsActive = await checkColumnExists('SurveyQuestions', 'IsActive');
+    
+    // Process each department
+    for (const dept of departments) {
+      try {
+        // If IsActive column exists, deactivate other questions first
+        if (hasIsActive) {
+          await pool.request()
+            .input('departmentId', sql.Int, dept.DepartmentID)
+            .query('UPDATE SurveyQuestions SET IsActive = 0 WHERE DepartmentID = @departmentId');
+        }
+        
+        // Insert new question
+        let insertQuery = 'INSERT INTO SurveyQuestions (DepartmentID, QuestionText';
+        let values = 'VALUES (@departmentId, @questionText';
+        
+        if (hasIsActive) {
+          insertQuery += ', IsActive';
+          values += ', 1';
+        }
+        
+        if (await checkColumnExists('SurveyQuestions', 'CreatedAt')) {
+          insertQuery += ', CreatedAt';
+          values += ', GETDATE()';
+        }
+        
+        if (await checkColumnExists('SurveyQuestions', 'UpdatedAt')) {
+          insertQuery += ', UpdatedAt';
+          values += ', GETDATE()';
+        }
+        
+        insertQuery += `) ${values})`;
+        
+        await pool.request()
+          .input('departmentId', sql.Int, dept.DepartmentID)
+          .input('questionText', sql.NVarChar, cleanQuestion)
+          .query(insertQuery);
+      } catch (err) {
+        console.error(`Error adding question to department ${dept.DepartmentID}:`, err);
+        // Continue with next department even if one fails
+      }
+    }
+    
+    res.json({ 
+      success: true,
+      message: `Question added to ${departments.length} departments`
+    });
+  } catch (err) {
+    console.error('Bulk question error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
 // Get current user info
 app.get('/api/admin/me', authenticateJWT(), async (req, res) => {
   try {
@@ -311,6 +360,7 @@ app.get('/api/admin/me', authenticateJWT(), async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 // Add this new API endpoint to your backend to get department info by slug
 app.get('/api/departments/slug/:slug', async (req, res) => {
   try {
@@ -457,90 +507,8 @@ app.get('/api/reports/history', async (req, res) => {
   }
 });
 
-// new endpoint to Express server
-app.post('/api/admin/reset-password', authenticateJWT(), async (req, res) => {
-  console.log('Password reset endpoint hit');
-  console.log('User from JWT:', req.user);
-  console.log('Request body:', req.body);
-  
-  try {
-    const { currentPassword, newPassword } = req.body;
-    const userId = req.user.UserID; // Note: Check if it's UserID or userId
-    
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ error: 'Current and new password are required' });
-    }
-    
-    if (newPassword.length < 6) {
-      return res.status(400).json({ error: 'New password must be at least 6 characters long' });
-    }
-    
-    const pool = await getPool();
-    
-    // Get current password hash
-    const userResult = await pool.request()
-    .input('userId', sql.Int, userId)
-    .query('SELECT PasswordHash FROM Users WHERE UserID = @userId');
-    
-    console.log('User lookup result:', userResult.recordset.length);
-    
-    if (userResult.recordset.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    
-    const currentHash = userResult.recordset[0].PasswordHash;
-    
-    // Verify current password
-    const isMatch = await bcrypt.compare(currentPassword, currentHash);
-    console.log('Password match:', isMatch);
-    
-    if (!isMatch) {
-      return res.status(401).json({ error: 'Current password is incorrect' });
-    }
-    
-    // Hash new password
-    const salt = await bcrypt.genSalt(10);
-    const newHash = await bcrypt.hash(newPassword, salt);
-    
-    // Check if PasswordChangedAt column exists
-    const hasPasswordChangedAt = await checkColumnExists('Users', 'PasswordChangedAt');
-    
-    let updateQuery = 'UPDATE Users SET PasswordHash = @passwordHash';
-    if (hasPasswordChangedAt) {
-      updateQuery += ', PasswordChangedAt = GETDATE()';
-    }
-    updateQuery += ' WHERE UserID = @userId';
-    
-    // Update password
-    await pool.request()
-    .input('userId', sql.Int, userId)
-    .input('passwordHash', sql.NVarChar, newHash)
-    .query(updateQuery);
-    
-    console.log('Password updated successfully for user:', userId);
-    res.json({ success: true, message: 'Password updated successfully' });
-    
-  } catch (err) {
-    console.error('Password reset error:', err);
-    res.status(500).json({ error: 'Internal server error: ' + err.message });
-  }
-});
+// REMOVED: Password reset endpoint and password expiry check endpoint
 
-// Also, let's check your authenticateJWT middleware - there might be an issue there
-// Make sure it's properly setting req.user with the correct property name
-
-
-// Add a test endpoint to verify JWT is working
-app.get('/api/admin/test-auth', authenticateJWT(), (req, res) => {
-  res.json({ 
-    message: 'Auth working!', 
-    user: {
-      id: req.user.UserID,
-      username: req.user.Username,
-      level: req.user.UserLevel
-    }
-  });
-});
 // Export reports to Excel
 app.get('/api/reports/export', async (req, res) => {
   try {
@@ -732,6 +700,7 @@ app.get('/api/reports/export', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 // Check if column exists in table
 async function checkColumnExists(tableName, columnName) {
   try {
@@ -1005,6 +974,7 @@ async function checkColumnExists(tableName, columnName) {
             res.status(500).json({ error: err.message });
           }
         });
+
         // Get questions by department ID
         app.get('/api/departments/:id/questions', async (req, res) => {
           try {
@@ -1031,6 +1001,7 @@ async function checkColumnExists(tableName, columnName) {
             res.status(500).json({ error: err.message });
           }
         });
+
         // Get questions for department - Basic version
         app.get('/api/departments/:slug/questions', async (req, res) => {
           try {
@@ -1334,7 +1305,7 @@ async function checkColumnExists(tableName, columnName) {
             res.status(500).json({ error: err.message });
           }
         });
-        // Replace the existing answer submission endpoint with this updated version
+
         // Updated answer submission endpoint with DepartmentID support
         app.post('/api/questions/:questionId/answers', async (req, res) => {
           try {
@@ -1410,7 +1381,8 @@ async function checkColumnExists(tableName, columnName) {
             res.status(500).json({ error: err.message });
           }
         });
-        // Replace the existing emoji stats endpoint with this updated version
+
+        // Get emoji statistics across all questions
         app.get('/api/emoji-stats', async (req, res) => {
           try {
             const pool = await getPool();
@@ -1449,122 +1421,7 @@ async function checkColumnExists(tableName, columnName) {
             res.status(500).json({ error: err.message });
           }
         });
-        // New endpoint: Get emoji statistics across all questions
-        app.get('/api/emoji-stats', async (req, res) => {
-          try {
-            const pool = await getPool();
-            const hasEmojiID = await checkColumnExists('SurveyAnswers', 'EmojiID');
-            
-            let query = `
-      SELECT AnswerEmoji, COUNT(*) as TotalCount,
-             CASE 
-               WHEN (SELECT COUNT(*) FROM SurveyAnswers) > 0
-               THEN CAST(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM SurveyAnswers) AS DECIMAL(5,2))
-               ELSE 0
-             END as Percentage`;
-            
-            if (hasEmojiID) {
-              query += `, EmojiID`;
-            }
-            
-            query += `
-      FROM SurveyAnswers
-      GROUP BY AnswerEmoji`;
-            
-            if (hasEmojiID) {
-              query += `, EmojiID`;
-            }
-            
-            query += ` ORDER BY TotalCount DESC`;
-            
-            const result = await pool.request().query(query);
-            res.json(result.recordset);
-          } catch (err) {
-            console.error('Error fetching emoji statistics:', err);
-            res.status(500).json({ error: err.message });
-          }
-        });
-        // Add these routes to your Express server (before app.listen)
-        
-        // Password reset endpoint
-        app.post('/api/admin/reset-password', authenticateJWT(), async (req, res) => {
-          try {
-            const { currentPassword, newPassword } = req.body;
-            const userId = req.user.userId;
-            
-            if (!currentPassword || !newPassword) {
-              return res.status(400).json({ error: 'Current and new password are required' });
-            }
-            
-            const pool = await getPool();
-            
-            // Get current password hash
-            const userResult = await pool.request()
-            .input('userId', sql.Int, userId)
-            .query('SELECT PasswordHash FROM Users WHERE UserID = @userId');
-            
-            if (userResult.recordset.length === 0) {
-              return res.status(404).json({ error: 'User not found' });
-            }
-            
-            const currentHash = userResult.recordset[0].PasswordHash;
-            
-            // Verify current password
-            const isMatch = await bcrypt.compare(currentPassword, currentHash);
-            if (!isMatch) {
-              return res.status(401).json({ error: 'Current password is incorrect' });
-            }
-            
-            // Hash new password
-            const salt = await bcrypt.genSalt(10);
-            const newHash = await bcrypt.hash(newPassword, salt);
-            
-            // Update password
-            await pool.request()
-            .input('userId', sql.Int, userId)
-            .input('passwordHash', sql.NVarChar, newHash)
-            .query('UPDATE Users SET PasswordHash = @passwordHash WHERE UserID = @userId');
-            
-            res.json({ success: true });
-          } catch (err) {
-            console.error('Password reset error:', err);
-            res.status(500).json({ error: err.message });
-          }
-        });
-        
-        // Check if password needs reset (expired)
-        app.get('/api/admin/password-expired', authenticateJWT(), async (req, res) => {
-          try {
-            const userId = req.user.userId;
-            const pool = await getPool();
-            
-            // Get password change date (use CreatedAt if PasswordChangedAt doesn't exist)
-            const hasPasswordChangedAt = await checkColumnExists('Users', 'PasswordChangedAt');
-            
-            let query = `SELECT ${hasPasswordChangedAt ? 'PasswordChangedAt' : 'CreatedAt'} as changeDate 
-                 FROM Users WHERE UserID = @userId`;
-            
-            const result = await pool.request()
-            .input('userId', sql.Int, userId)
-            .query(query);
-            
-            if (result.recordset.length === 0) {
-              return res.status(404).json({ error: 'User not found' });
-            }
-            
-            const changeDate = new Date(result.recordset[0].changeDate);
-            const now = new Date();
-            const daysSinceChange = Math.floor((now - changeDate) / (1000 * 60 * 60 * 24));
-            
-            res.json({ 
-              expired: daysSinceChange >= 60,
-              daysSinceChange
-            });
-          } catch (err) {
-            console.error('Password expiry check error:', err);
-            res.status(500).json({ error: err.message });
-          }
-        });
+
         // Start server
         app.listen(PORT, () => {
           console.log(`Server running on port ${PORT}`);
