@@ -7,6 +7,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
+const pdf = require('html-pdf');
+const { v4: uuidv4 } = require('uuid');
 const app = express();
 const PORT = process.env.PORT || 5000;
 app.use(cors());
@@ -121,6 +123,58 @@ const isSlugUnique = async (pool, slug) => {
     return false;
   }
 };
+//PDF generation
+app.post('/api/reports/export-pdf', async (req, res) => {
+  try {
+    const { departmentId, startDate, endDate, htmlContent } = req.body;
+    
+    if (!htmlContent) {
+      return res.status(400).json({ error: 'HTML content is required' });
+    }
+
+    const options = {
+      format: 'A4',
+      orientation: 'portrait',
+      border: {
+        top: '20px',
+        right: '20px',
+        bottom: '20px',
+        left: '20px'
+      },
+      timeout: 60000
+    };
+
+    const filename = `survey_report_${uuidv4()}.pdf`;
+    const filepath = path.join(__dirname, 'temp', filename);
+
+    // Ensure temp directory exists
+    if (!fs.existsSync(path.join(__dirname, 'temp'))) {
+      fs.mkdirSync(path.join(__dirname, 'temp'));
+    }
+
+    pdf.create(htmlContent, options).toFile(filepath, async (err) => {
+      if (err) {
+        console.error('PDF creation error:', err);
+        return res.status(500).json({ error: 'Failed to generate PDF' });
+      }
+
+      res.download(filepath, `Survey_Report_${new Date().toISOString().split('T')[0]}.pdf`, (err) => {
+        if (err) {
+          console.error('PDF download error:', err);
+        }
+        
+        // Clean up the file after sending
+        fs.unlink(filepath, (unlinkErr) => {
+          if (unlinkErr) console.error('Error deleting temp PDF:', unlinkErr);
+        });
+      });
+    });
+
+  } catch (err) {
+    console.error('PDF export error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Helper function to generate unique slug
 const generateUniqueSlug = async (pool) => {
