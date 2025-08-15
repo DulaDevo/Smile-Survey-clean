@@ -15,6 +15,7 @@
     "concurrently": "^7.6.0"
   },
   "dependencies": {
+    "@napi-rs/canvas": "^0.1.77",
     "chartjs-node-canvas": "^5.0.0",
     "file-saver": "^2.0.5",
     "html-pdf": "^3.0.1",
