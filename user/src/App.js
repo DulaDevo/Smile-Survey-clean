@@ -1324,9 +1324,7 @@ const AdminDashboard = ({ onLogout, userLevel, username }) => {
                   onKeyDown={(e) => {
                     // Allow Enter key to create new lines
                     if (e.key === 'Enter' && !e.shiftKey) {
-                      // Optional: You can still allow Shift+Enter for submission if desired
-                      // e.preventDefault();
-                      // submitBulkQuestion();
+                      
                     }
                   }}
                   placeholder="Question text for all departments (Press Enter and add English translate)"
@@ -1363,9 +1361,7 @@ const AdminDashboard = ({ onLogout, userLevel, username }) => {
                   onKeyDown={(e) => {
                     // Allow Enter key to create new lines
                     if (e.key === 'Enter' && !e.shiftKey) {
-                      // Optional: You can still allow Shift+Enter for submission if desired
-                      // e.preventDefault();
-                      // addQuestion();
+                      
                     }
                   }}
                   placeholder="Question text (Press Enter and add English translate)"
