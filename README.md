@@ -224,7 +224,7 @@ The Survey Management System is a full-stack application that allows organizatio
 - **Survey Interface**: Emoji-based response system
 - **Responsive Design**: Works on desktop and mobile
 - **Submission Feedback**: Success/error messages
-- **Auto-refresh**: After submission for next user
+- **Auto-refresh**: After submission for next user within 3 seconds
 
 ## Authentication & Authorization
 
@@ -313,20 +313,20 @@ The Survey Management System is a full-stack application that allows organizatio
    - Password reset functionality
    - Two-factor authentication
 
-3. **Mobile App**
-   - Native applications for iOS/Android
-   - Offline data collection
-
-4. **Additional Question Types**
+3. **Additional Question Types**
    - Multiple choice questions
    - Text feedback options
-
-5. **Notification System**
-   - Email alerts for new responses
-   - Threshold-based notifications
 
 This documentation provides a comprehensive overview of the Survey Management System. For specific implementation details, refer to the source code comments and the API documentation sections.
 =======
 # Smile-Survey-clean
 cleaned this repo
 >>>>>>> dbdf37fd9775f7a8f7a6b71877b471a4f2549fa8
+
+Run the system
+1.download the Repo
+2.file path:- user/src
+3.command :- npm install rechart
+4.open another terminal
+5.file path :- project root
+6.npm start
