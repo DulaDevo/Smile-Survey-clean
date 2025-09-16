@@ -19,8 +19,7 @@ const SurveyUserPanel = () => {
   // Function to read slug from text file
   const readSlugFromFile = async () => {
     try {
-      // For security reasons, browsers don't allow direct file system access
-      // This would need to be handled by a backend API
+      
       const response = await fetch(`${API_BASE_URL}/get-slug`);
       if (response.ok) {
         const data = await response.json();
@@ -222,7 +221,6 @@ const SurveyUserPanel = () => {
           const errorData = await response.json();
           errorMessage = errorData.error || errorMessage;
         } catch (parseError) {
-          // If we can't parse the error response
           if (response.status === 500) {
             errorMessage = 'Server error occurred while submitting';
           } else if (response.status === 404) {

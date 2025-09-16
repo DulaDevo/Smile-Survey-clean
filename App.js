@@ -25,8 +25,8 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
   
   return (
     <text 
-    x={x} 
-    y={y} 
+    x={x}
+    y={y}
     fill="white" 
     textAnchor={x > cx ? 'start' : 'end'} 
     dominantBaseline="central"
@@ -176,11 +176,11 @@ const SurveyUserPanel = ({ onAdminLogin }) => {
   }, []);
   
   const emojiOptions = [
-    { id: 1, emoji: '😍', label: 'Excellent විශිෂ්ටයි', color: 'bg-green-100 border-green-300 hover:bg-green-200' },
-    { id: 2, emoji: '😊', label: 'Good හොඳයි ', color: 'bg-blue-100 border-blue-300 hover:bg-blue-200' },
-    { id: 3, emoji: '😐', label: 'Okay සාමාන්‍යයි', color: 'bg-yellow-100 border-yellow-300 hover:bg-yellow-200' },
-    { id: 4, emoji: '😞', label: 'Bad අකැමතියි', color: 'bg-orange-100 border-orange-300 hover:bg-orange-200' },
-    { id: 5, emoji: '😡', label: 'Poor දුර්වලයි', color: 'bg-red-100 border-red-300 hover:bg-red-200' }
+    { id: 1, emoji: '😍', label: 'Excellent', color: 'bg-green-100 border-green-300 hover:bg-green-200' },
+    { id: 2, emoji: '😊', label: 'Good', color: 'bg-blue-100 border-blue-300 hover:bg-blue-200' },
+    { id: 3, emoji: '😐', label: 'Okay', color: 'bg-yellow-100 border-yellow-300 hover:bg-yellow-200' },
+    { id: 4, emoji: '😞', label: 'Bad', color: 'bg-orange-100 border-orange-300 hover:bg-orange-200' },
+    { id: 5, emoji: '😡', label: 'Poor', color: 'bg-red-100 border-red-300 hover:bg-red-200' }
   ];
   
   useEffect(() => {
@@ -717,7 +717,7 @@ const SurveyUserPanel = ({ onAdminLogin }) => {
           setSuccess(data.message);
           setBulkQuestionText('');
           setBulkQuestionMode(false);
-          await loadQuestions(); // Refresh the questions list
+          await loadQuestions(); 
         } else {
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to add bulk question');
@@ -748,8 +748,7 @@ const SurveyUserPanel = ({ onAdminLogin }) => {
         setLoading(false);
       }
     };
-    // Add this to your imports at the top of your component file
-    
+
     const loadQuestions = async () => {
       try {
         setLoading(true);
@@ -1257,7 +1256,6 @@ const SurveyUserPanel = ({ onAdminLogin }) => {
         <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-xl font-bold mb-4">Create Question</h2>
         
-        {/* Add this toggle button */}
         <div className="mb-4 flex justify-end">
         <button
         onClick={() => setBulkQuestionMode(!bulkQuestionMode)}
