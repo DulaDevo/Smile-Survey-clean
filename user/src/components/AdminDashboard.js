@@ -789,73 +789,134 @@ const AdminDashboard = () => {
     )}
     
     {activeTab === 'questions' && (
-      <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-bold mb-4">Create Question</h2>
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
-        {error}
-        </div>
-      )}
-      {success && (
-        <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md">
-        {success}
-        </div>
-      )}
-      
-      <div className="mb-6">
-      <select
-      value={selectedDepartment}
-      onChange={(e) => setSelectedDepartment(e.target.value)}
-      className="w-full p-2 border rounded-md mb-2"
-      >
-      <option value="">Select department</option>
-      {departments.map(dept => (
-        <option key={dept.DepartmentID} value={dept.DepartmentID}>
-        {dept.Name}
-        </option>
-      ))}
-      </select>
-      <textarea
-      value={newQuestion}
-      onChange={(e) => setNewQuestion(e.target.value)}
-      placeholder="Question text"
-      rows={3}
-      className="w-full p-2 border rounded-md"
-      />
-      <button
-      onClick={addQuestion}
-      disabled={loading}
-      className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
-      >
-      {loading ? 'Adding...' : 'Add Question'}
-      </button>
-      </div>
-      <h3 className="text-lg font-bold mb-2">Current Questions</h3>
-      <div className="space-y-3">
-      {questions.length === 0 ? (
-        <p className="text-gray-500 text-center py-4">No questions found</p>
-      ) : (
-        questions.map(q => {
-          const dept = departments.find(d => d.DepartmentID === q.DepartmentID);
-          return (
-            <div key={q.QuestionID} className="p-3 border rounded-md">
-            <div className="flex justify-between items-start">
-            <p className="flex-1">{q.QuestionText}</p>
-            <span className={`px-2 py-1 text-xs rounded ml-2 ${q.IsActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-            }`}>
-            {q.IsActive ? 'Active' : 'Inactive'}
-            </span>
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-bold mb-4">Create Question with Date Range</h2>
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+            {success && (
+              <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md">
+                {success}
+              </div>
+            )}
+            
+            <div className="mb-6 space-y-4">
+              <div>
+                <label className="block text-gray-700 text-sm font-medium mb-2">
+                  Select Department *
+                </label>
+                <select
+                  value={selectedDepartment}
+                  onChange={(e) => setSelectedDepartment(e.target.value)}
+                  className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select department</option>
+                  {departments.map(dept => (
+                    <option key={dept.DepartmentID} value={dept.DepartmentID}>
+                      {dept.Name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-gray-700 text-sm font-medium mb-2">
+                  Question Text *
+                </label>
+                <textarea
+                  value={newQuestion}
+                  onChange={(e) => setNewQuestion(e.target.value)}
+                  placeholder="Enter your question here"
+                  rows={3}
+                  className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-700 text-sm font-medium mb-2">
+                    <Calendar className="w-4 h-4 inline mr-1" />
+                    From Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={fromDate}
+                    onChange={(e) => setFromDate(e.target.value)}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 text-sm font-medium mb-2">
+                    <Calendar className="w-4 h-4 inline mr-1" />
+                    To Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={toDate}
+                    onChange={(e) => setToDate(e.target.value)}
+                    min={fromDate}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <button
+                onClick={addQuestion}
+                disabled={loading}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 flex items-center justify-center gap-2"
+              >
+                <PlusCircle className="w-5 h-5" />
+                {loading ? 'Adding Question...' : 'Add Question with Date Range'}
+              </button>
             </div>
-            <p className="text-sm text-gray-600 mt-1">
-            {dept?.Name || 'Unknown Department'} • {q.CreatedAt ? new Date(q.CreatedAt).toLocaleString() : 'Date not available'}
-            </p>
+
+            <h3 className="text-lg font-bold mb-4 mt-8">Current Questions</h3>
+            <div className="space-y-3">
+              {questions.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">No questions found</p>
+              ) : (
+                questions.map(q => {
+                  const dept = departments.find(d => d.DepartmentID === q.DepartmentID);
+                  const statusInfo = getQuestionStatus(q);
+                  
+                  return (
+                    <div key={q.QuestionID} className="p-4 border rounded-md bg-gray-50">
+                      <div className="flex justify-between items-start mb-2">
+                        <p className="flex-1 font-medium">{q.QuestionText}</p>
+                        <span className={`px-2 py-1 text-xs rounded ml-2 whitespace-nowrap ${statusInfo.className}`}>
+                          {statusInfo.status}
+                        </span>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600 mt-3">
+                        <p>
+                          <Building className="w-4 h-4 inline mr-1" />
+                          {dept?.Name || 'Unknown Department'}
+                        </p>
+                        {q.FromDate && q.ToDate && (
+                          <p className="flex items-center gap-1">
+                            <Calendar className="w-4 h-4" />
+                            {new Date(q.FromDate).toLocaleDateString()} - {new Date(q.ToDate).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                      
+                      {q.CreatedAt && (
+                        <p className="text-xs text-gray-500 mt-2">
+                          Created: {new Date(q.CreatedAt).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
-          );
-        })
-      )}
-      </div>
-      </div>
-    )}
+          </div>
+        )}
     
     {activeTab === 'reports' && (
       <div className="bg-white rounded-lg shadow-md p-6">
