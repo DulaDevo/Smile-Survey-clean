@@ -6,10 +6,10 @@
     "install:all": "cd backend && npm install && cd ../admin && npm install && cd ../user && npm install",
     "dev:backend": "cd backend && npm start",
     "dev:admin": "cd admin && npm start",
-    "dev:user": "cd user && npm start",
+    "dev:user": "cd user && npm start --port 3006",
     "build:admin": "cd admin && npm run build",
     "build:user": "cd user && npm run build",
-    "start": "concurrently \"npm run dev:backend\" \"npm run dev:admin\" \"npm run dev:user\""
+    "start": "concurrently \"npm run dev:backend\" \"npm run dev:admin\" \"npm run dev:user --port 3006\""
   },
   "devDependencies": {
     "concurrently": "^7.6.0"

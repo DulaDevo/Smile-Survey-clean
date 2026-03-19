@@ -98,8 +98,8 @@ async function updateActiveQuestions() {
   }
 }
 
-// Run every hour
-setInterval(updateActiveQuestions, 60 * 60 * 1000);
+// Run every 15 minutes
+setInterval(updateActiveQuestions, 15 * 60 * 1000);
 
 // Run on startup
 setTimeout(updateActiveQuestions, 5000);
@@ -108,8 +108,15 @@ setTimeout(updateActiveQuestions, 5000);
 
 
 function getDatabaseConfig() {
+  const server = process.env.DB_SERVER || 'DCL-ICT-009\\ERASQL';
+  const port = parseInt(process.env.DB_PORT) || 1433;
+
+  console.log('Server:', server);   
+  console.log('Port:', port);     
+
   const baseConfig = {
-    server: process.env.DB_SERVER || 'DULA-DEV',
+    server: server,
+    port: port,
     database: process.env.DB_NAME || 'SurveyManagement',
     options: {
       encrypt: false,
@@ -137,7 +144,9 @@ function getDatabaseConfig() {
 
   console.log('Trying connection string approach for Windows Authentication');
   return {
-    connectionString: `Server=${process.env.DB_SERVER || 'DULA-DEV'};Database=${process.env.DB_NAME || 'SurveyManagement'};Trusted_Connection=true;TrustServerCertificate=true;ConnectTimeout=30;`,
+
+    
+    connectionString: `Server=${process.env.DB_SERVER || 'DCL-ICT-009\\ERASQL'};Database=${process.env.DB_NAME || 'SurveyManagement'};Trusted_Connection=true;TrustServerCertificate=true;ConnectTimeout=30;`,
     options: {
       encrypt: false,
       trustServerCertificate: true,

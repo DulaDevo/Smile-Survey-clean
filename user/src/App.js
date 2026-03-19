@@ -7,14 +7,7 @@ import {
   Building, LogOut, Eye, EyeOff
 } from 'lucide-react';
 
-const getApiBaseUrl = () => {
-  const hostname = window.location.hostname;
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:5000/api';
-  }
-  return `http://${hostname}:5000/api`;
-};
-
+const API_BASE_URL = '/api';
 
 const EMOJI_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA726', '#AB47BC'];
 
@@ -73,7 +66,6 @@ const App = () => {
 
   const verifyToken = async (token) => {
     try {
-      const API_BASE_URL = getApiBaseUrl();
       const response = await fetch(`${API_BASE_URL}/admin/me`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -133,7 +125,6 @@ const SurveyUserPanel = ({ onAdminLogin }) => {
   const [clickCount, setClickCount] = useState(0);
   const [showAdminButton, setShowAdminButton] = useState(false);
 
-  const API_BASE_URL = getApiBaseUrl();
 
   // Function to read slug from text file
   const readSlugFromFile = async () => {
@@ -688,15 +679,9 @@ const AdminDashboard = ({ onLogout, userLevel, username }) => {
     userLevel: 2
   });
 
-  const getApiBaseUrl = () => {
-    const hostname = window.location.hostname;
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return 'http://localhost:5000/api';
-    }
-    return `http://${hostname}:5000/api`;
-  };
+  const API_BASE_URL = '/api';  // ✅
 
-  const API_BASE_URL = getApiBaseUrl();
+
   const submitBulkQuestion = async () => {
     if (!bulkQuestionText.trim()) {
       setError('Question text is required');

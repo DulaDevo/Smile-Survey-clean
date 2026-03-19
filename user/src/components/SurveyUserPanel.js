@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 
-const SurveyUserPanel = () => {
+const SurveyUserPanel = ({ onAdminLogin }) => {
+  const API_BASE_URL = '/api';  // ✅ moved to top
+
   const [question, setQuestion] = useState(null);
   const [department, setDepartment] = useState('');
   const [loading, setLoading] = useState(true);
@@ -15,64 +17,54 @@ const SurveyUserPanel = () => {
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
-  
-  // Function to read slug from text file
+  const [clickCount, setClickCount] = useState(0);
+  const [showAdminButton, setShowAdminButton] = useState(false);
+
+  // Read slug from backend file fallback
   const readSlugFromFile = async () => {
     try {
-      
       const response = await fetch(`${API_BASE_URL}/get-slug`);
       if (response.ok) {
         const data = await response.json();
-        return data.slug || 'it-department'; // default fallback
+        return data.slug || '';
       }
-      return 'it-department'; // default fallback
+      return '';
     } catch (err) {
       console.error('Failed to read slug file:', err);
-      return 'it-department'; // default fallback
+      return '';
     }
   };
 
+  // ✅ Single useEffect for slug — async with file fallback, no duplicate
   useEffect(() => {
-    const extractSlugFromUrl = async () => {
+    const initializeSlug = async () => {
       const pathname = window.location.pathname;
       const urlParts = pathname.split('/').filter(part => part.length > 0);
       let slug = '';
-      
+
       if (urlParts.length === 0) {
-        // If no slug in URL, read from file
         slug = await readSlugFromFile();
       } else if (urlParts.length === 1) {
         slug = urlParts[0];
       } else {
         slug = urlParts[urlParts.length - 1];
       }
-      
+
+      // Clean query params / hash
       slug = slug.split('?')[0].split('#')[0];
-      return slug || await readSlugFromFile(); // fallback to file if empty
-    };
-    
-    const initializeSlug = async () => {
-      const slug = await extractSlugFromUrl();
+
+      // Final fallback to file if still empty
+      if (!slug) {
+        slug = await readSlugFromFile();
+      }
+
       setDepartmentSlug(slug);
     };
-    
+
     initializeSlug();
   }, []);
 
-  
-  // Make API_BASE_URL dynamic to work across network
-  const getApiBaseUrl = () => {
-    // If in development and accessing from another machine, use the server's IP
-    const hostname = window.location.hostname;
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return 'http://localhost:5000/api';
-    }
-    // For network access, construct URL using current hostname but backend port
-    return `http://${hostname}:5000/api`;
-  };
-  
-  const API_BASE_URL = getApiBaseUrl();
-  
+
   // Updated emoji options with IDs for better tracking
   const emojiOptions = [
     { id: 1, emoji: '😍', label: 'Excellent', color: 'bg-green-100 border-green-300 hover:bg-green-200' },

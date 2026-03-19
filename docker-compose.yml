@@ -1,0 +1,52 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: survey-backend
+    restart: unless-stopped
+    environment:
+      PORT: "5000"
+      DB_SERVER: "192.168.2.19"
+      DB_PORT: "1433"
+      DB_NAME: "SurveyManagement"
+      DB_USER: "sa2"
+      DB_PASSWORD: "123"
+      JWT_SECRET: "change-this-secret-in-production"
+      ENCRYPTION_KEY: "12345678910111213141516171819202"
+      NODE_ENV: "development"
+      CORS_ORIGIN: "http://192.168.2.19:3008"
+      LOG_LEVEL: "info"
+      DB_POOL_MAX: "10"
+      DB_POOL_MIN: "0"
+      DB_POOL_IDLE_TIMEOUT: "30000"
+    volumes:
+      - ./backend/fonts:/app/fonts:ro
+    networks:
+      - survey-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./user
+      dockerfile: Dockerfile
+    container_name: survey-frontend
+    restart: unless-stopped
+    ports:
+      - "3008:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - survey-net
+
+networks:
+  survey-net:
+    driver: bridge
